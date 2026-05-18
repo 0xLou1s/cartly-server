@@ -202,11 +202,7 @@ export class AuthService {
     const hashedPassword = await this.hashingService.hash(newPassword)
     await Promise.all([
       this.authRepository.updateUser({ id: user.id }, { password: hashedPassword }),
-      this.otpService.deleteVerificationCode({
-        email: verificationCode.email,
-        code: verificationCode.code,
-        type: verificationCode.type,
-      }),
+      this.otpService.deleteVerificationCode(verificationCode),
     ])
     return { message: AuthMessage.Success.ResetPasswordSuccessful }
   }

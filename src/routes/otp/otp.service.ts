@@ -58,9 +58,9 @@ export class OtpService {
 
   async verifyOTP({ email, code, type }: VerificationCodeKey) {
     const verificationCode = await this.otpRepository.findUniqueVerificationCode({
-      email_code_type: { email, code, type },
+      email_type: { email, type },
     })
-    if (!verificationCode) {
+    if (!verificationCode || verificationCode.code !== code) {
       throw InvalidOTPException
     }
     if (verificationCode.expiresAt < new Date()) {
@@ -69,9 +69,9 @@ export class OtpService {
     return verificationCode
   }
 
-  deleteVerificationCode({ email, code, type }: VerificationCodeKey) {
+  deleteVerificationCode({ email, type }: { email: string; type: TypeOfVerificationCodeType }) {
     return this.otpRepository.deleteVerificationCode({
-      email_code_type: { email, code, type },
+      email_type: { email, type },
     })
   }
 }

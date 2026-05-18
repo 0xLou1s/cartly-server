@@ -5,7 +5,7 @@ import { PrismaService } from 'src/shared/services/prisma.service'
 
 export type VerificationCodeUniqueInput =
   | { id: number }
-  | { email_code_type: { email: string; code: string; type: TypeOfVerificationCodeType } }
+  | { email_type: { email: string; type: TypeOfVerificationCodeType } }
 
 @Injectable()
 export class OtpRepository {
@@ -16,9 +16,8 @@ export class OtpRepository {
   ): Promise<VerificationCodeType> {
     return this.prismaService.verificationCode.upsert({
       where: {
-        email_code_type: {
+        email_type: {
           email: payload.email,
-          code: payload.code,
           type: payload.type,
         },
       },
