@@ -11,6 +11,7 @@ export const AuthMessage = {
     MissingState: 'Error.MissingState',
     InvalidState: 'Error.InvalidState',
     StateExpired: 'Error.StateExpired',
+    TOTPOrOTPCodeRequired: 'Error.TOTPOrOTPCodeRequired',
   },
   Success: {
     LogoutSuccessful: 'Auth.LogoutSuccessful',

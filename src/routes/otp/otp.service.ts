@@ -17,6 +17,8 @@ import { generateOTP } from 'src/shared/helpers'
 import { SharedUserRepository } from 'src/shared/repositories/shared-user.repo'
 import { EmailService } from 'src/shared/services/email.service'
 
+type VerificationCodeKey = { email: string; code: string; type: TypeOfVerificationCodeType }
+
 @Injectable()
 export class OtpService {
   constructor(
@@ -54,8 +56,10 @@ export class OtpService {
     return { message: OtpMessage.Success.Sent }
   }
 
-  async verifyOTP(payload: { email: string; code: string; type: TypeOfVerificationCodeType }) {
-    const verificationCode = await this.otpRepository.findUniqueVerificationCode(payload)
+  async verifyOTP({ email, code, type }: VerificationCodeKey) {
+    const verificationCode = await this.otpRepository.findUniqueVerificationCode({
+      email_code_type: { email, code, type },
+    })
     if (!verificationCode) {
       throw InvalidOTPException
     }
@@ -65,7 +69,9 @@ export class OtpService {
     return verificationCode
   }
 
-  deleteVerificationCode(uniqueValue: { id: number } | { email: string }) {
-    return this.otpRepository.deleteVerificationCode(uniqueValue)
+  deleteVerificationCode({ email, code, type }: VerificationCodeKey) {
+    return this.otpRepository.deleteVerificationCode({
+      email_code_type: { email, code, type },
+    })
   }
 }
