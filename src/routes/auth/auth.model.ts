@@ -30,17 +30,28 @@ export const AuthResSchema = z.object({
 })
 
 export const RegisterResSchema = AuthResSchema
-export const LoginResSchema = AuthResSchema
 
 export const LoginBodySchema = UserSchema.pick({
   email: true,
   password: true,
+}).strict()
+
+export const LoginResSchema = z.object({
+  requires2FA: z.boolean(),
+  tempToken: z.string().optional(),
+  accessToken: z.string().optional(),
+  refreshToken: z.string().optional(),
+  user: UserResSchema.optional(),
 })
-  .extend({
-    totpCode: z.string().length(6).optional(), // 2FA code
-    code: z.string().length(6).optional(), // Email OTP code
+
+export const Verify2FABodySchema = z
+  .object({
+    tempToken: z.string(),
+    code: z.string().length(6),
   })
   .strict()
+
+export const Verify2FAResSchema = AuthResSchema
 
 export const RefreshTokenBodySchema = z
   .object({
@@ -101,7 +112,15 @@ export const DisableTwoFactorBodySchema = z
 export const TwoFactorSetupResSchema = z.object({
   secret: z.string(),
   uri: z.string(),
+  setupToken: z.string(),
 })
+
+export const ConfirmTwoFactorBodySchema = z
+  .object({
+    setupToken: z.string(),
+    code: z.string().length(6),
+  })
+  .strict()
 
 export const LogoutBodySchema = RefreshTokenBodySchema
 
@@ -152,3 +171,6 @@ export type GetAuthorizationUrlResType = z.infer<typeof GetAuthorizationUrlResSc
 export type ForgotPasswordBodyType = z.infer<typeof ForgotPasswordBodySchema>
 export type DisableTwoFactorBodyType = z.infer<typeof DisableTwoFactorBodySchema>
 export type TwoFactorSetupResType = z.infer<typeof TwoFactorSetupResSchema>
+export type Verify2FABodyType = z.infer<typeof Verify2FABodySchema>
+export type Verify2FAResType = z.infer<typeof Verify2FAResSchema>
+export type ConfirmTwoFactorBodyType = z.infer<typeof ConfirmTwoFactorBodySchema>

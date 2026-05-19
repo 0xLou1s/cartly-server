@@ -2,6 +2,7 @@ import { Body, Controller, Get, HttpCode, HttpStatus, Ip, Post, Query, Res } fro
 import type { Response } from 'express'
 import { ZodSerializerDto } from 'nestjs-zod'
 import {
+  ConfirmTwoFactorBodyDTO,
   ForgotPasswordBodyDTO,
   GetAuthorizationUrlResDTO,
   LoginBodyDTO,
@@ -12,6 +13,8 @@ import {
   RegisterBodyDTO,
   RegisterResDTO,
   TwoFactorSetupResDTO,
+  Verify2FABodyDTO,
+  Verify2FAResDTO,
 } from 'src/routes/auth/auth.dto'
 import { AuthService } from 'src/routes/auth/auth.service'
 import { ActiveUser } from 'src/shared/decorators/active-user.decorator'
@@ -45,6 +48,18 @@ export class AuthController {
   @ZodSerializerDto(LoginResDTO)
   async login(@Body() body: LoginBodyDTO, @UserAgent() userAgent: string, @Ip() ip: string) {
     return await this.authService.login({
+      ...body,
+      userAgent,
+      ip,
+    })
+  }
+
+  @Post('2fa/verify')
+  @IsPublic()
+  @HttpCode(HttpStatus.OK)
+  @ZodSerializerDto(Verify2FAResDTO)
+  async verifyTwoFactorLogin(@Body() body: Verify2FABodyDTO, @UserAgent() userAgent: string, @Ip() ip: string) {
+    return await this.authService.verifyTwoFactorLogin({
       ...body,
       userAgent,
       ip,
@@ -110,5 +125,12 @@ export class AuthController {
   @ZodSerializerDto(TwoFactorSetupResDTO)
   setupTwoFactorAuth(@Body() _: EmptyBodyDTO, @ActiveUser('userId') userId: number) {
     return this.authService.setupTwoFactorAuth(userId)
+  }
+
+  @Post('2fa/confirm')
+  @HttpCode(HttpStatus.OK)
+  @ZodSerializerDto(MessageResDTO)
+  confirmTwoFactorSetup(@Body() body: ConfirmTwoFactorBodyDTO, @ActiveUser('userId') userId: number) {
+    return this.authService.confirmTwoFactorSetup(userId, body)
   }
 }

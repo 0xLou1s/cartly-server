@@ -12,12 +12,22 @@ import { TwoFactorService } from 'src/shared/services/2fa.service'
 import { HashingService } from 'src/shared/services/hashing.service'
 import { TokenService } from 'src/shared/services/token.service'
 import { AccessTokenPayloadCreate } from 'src/shared/types/jwt.type'
-import { ForgotPasswordBodyType, LoginBodyType, RefreshTokenBodyType, RegisterBodyType } from './auth.model'
+import {
+  ConfirmTwoFactorBodyType,
+  ForgotPasswordBodyType,
+  LoginBodyType,
+  RefreshTokenBodyType,
+  RegisterBodyType,
+  Verify2FABodyType,
+} from './auth.model'
 import { AuthRepository } from './auth.repo'
 import {
   EmailAlreadyExistsException,
   EmailNotFoundException,
   InvalidCredentialsException,
+  InvalidSetupTokenException,
+  InvalidTempTokenException,
+  InvalidTOTPException,
   RefreshTokenAlreadyUsedException,
   TOTPAlreadyEnabledException,
   UnauthorizedAccessException,
@@ -88,18 +98,54 @@ export class AuthService {
       throw InvalidCredentialsException
     }
 
+    if (user.totpSecret) {
+      const tempToken = await this.tokenService.signLogin2FAToken({ userId: user.id })
+      return { requires2FA: true as const, tempToken }
+    }
+
+    const tokens = await this.issueSessionTokens(user, body.userAgent, body.ip)
+    return { requires2FA: false as const, ...tokens, user }
+  }
+
+  async verifyTwoFactorLogin(body: Verify2FABodyType & { userAgent: string; ip: string }) {
+    let userId: number
+    try {
+      ;({ userId } = await this.tokenService.verifyLogin2FAToken(body.tempToken))
+    } catch {
+      throw InvalidTempTokenException
+    }
+    const user = await this.authRepository.findUniqueUserIncludeRole({ id: userId })
+    if (!user || !user.totpSecret) {
+      throw InvalidTempTokenException
+    }
+    const isValid = this.twoFactorService.verifyTOTP({
+      email: user.email,
+      secret: user.totpSecret,
+      token: body.code,
+    })
+    if (!isValid) {
+      throw InvalidTOTPException
+    }
+    const tokens = await this.issueSessionTokens(user, body.userAgent, body.ip)
+    return { ...tokens, user }
+  }
+
+  private async issueSessionTokens(
+    user: { id: number; roleId: number; role: { name: string } },
+    userAgent: string,
+    ip: string,
+  ) {
     const device = await this.authRepository.findOrCreateDevice({
       userId: user.id,
-      userAgent: body.userAgent,
-      ip: body.ip,
+      userAgent,
+      ip,
     })
-    const tokens = await this.generateTokens({
+    return this.generateTokens({
       userId: user.id,
       deviceId: device.id,
       roleId: user.roleId,
       roleName: user.role.name,
     })
-    return { ...tokens, user }
   }
 
   async generateTokens({ userId, deviceId, roleId, roleName }: AccessTokenPayloadCreate) {
@@ -211,24 +257,44 @@ export class AuthService {
   }
 
   async setupTwoFactorAuth(userId: number) {
-    // 1. Lấy thông tin user, kiểm tra xem user có tồn tại hay không, và xem họ đã bật 2FA chưa
-    const user = await this.sharedUserRepository.findUnique({
-      id: userId,
-    })
+    const user = await this.sharedUserRepository.findUnique({ id: userId })
     if (!user) {
       throw EmailNotFoundException
     }
     if (user.totpSecret) {
       throw TOTPAlreadyEnabledException
     }
-    // 2. Tạo ra secret và uri
     const { secret, uri } = this.twoFactorService.generateTOTPSecret(user.email)
-    // 3. Cập nhật secret vào user trong database
-    await this.authRepository.updateUser({ id: userId }, { totpSecret: secret })
-    // 4. Trả về secret và uri
-    return {
-      secret,
-      uri,
+    const setupToken = await this.tokenService.signSetup2FAToken({ userId, secret })
+    return { secret, uri, setupToken }
+  }
+
+  async confirmTwoFactorSetup(userId: number, body: ConfirmTwoFactorBodyType) {
+    let payload: { userId: number; secret: string }
+    try {
+      payload = await this.tokenService.verifySetup2FAToken(body.setupToken)
+    } catch {
+      throw InvalidSetupTokenException
     }
+    if (payload.userId !== userId) {
+      throw InvalidSetupTokenException
+    }
+    const user = await this.sharedUserRepository.findUnique({ id: userId })
+    if (!user) {
+      throw EmailNotFoundException
+    }
+    if (user.totpSecret) {
+      throw TOTPAlreadyEnabledException
+    }
+    const isValid = this.twoFactorService.verifyTOTP({
+      email: user.email,
+      secret: payload.secret,
+      token: body.code,
+    })
+    if (!isValid) {
+      throw InvalidTOTPException
+    }
+    await this.authRepository.updateUser({ id: userId }, { totpSecret: payload.secret })
+    return { message: AuthMessage.Success.TwoFactorEnabled }
   }
 }

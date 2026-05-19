@@ -65,6 +65,16 @@ export const InvalidStateError = new Error(AuthMessage.Error.InvalidState)
 export const StateExpiredError = new Error(AuthMessage.Error.StateExpired)
 
 // 2FA related errors
+export const InvalidTOTPException = new UnprocessableEntityException([
+  {
+    message: AuthMessage.Error.InvalidTOTP,
+    path: 'totpCode',
+  },
+])
+
+export const InvalidTempTokenException = new UnauthorizedException(AuthMessage.Error.InvalidTempToken)
+export const InvalidSetupTokenException = new UnauthorizedException(AuthMessage.Error.InvalidSetupToken)
+
 export const TOTPAlreadyEnabledException = new UnprocessableEntityException([
   {
     message: AuthMessage.Error.TOTPAlreadyEnabled,
