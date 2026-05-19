@@ -196,20 +196,26 @@ All three short-lived JWTs are signed with `ACCESS_TOKEN_SECRET` and distinguish
 
 ---
 
-## Disable 2FA (future)
+## Flow 3: Disable 2FA
 
-Endpoint `POST /auth/2fa/disable` is partially scaffolded:
+### Authenticated path — `POST /auth/2fa/disable`
 
-- [`DisableTwoFactorBodySchema`](../../../src/routes/auth/auth.model.ts) accepts exactly one of `totpCode` / `code` (email OTP)
-- [`InvalidTOTPAndCodeException`](../../../src/routes/auth/error.model.ts) defined for the case where neither is provided
+For users still able to log in. Body accepts exactly one of `totpCode` / `code` (email OTP, type `DISABLE_2FA`). On success, `user.totpSecret` is cleared.
 
-Service method + route are not yet wired up.
+### Recovery path — `POST /auth/2fa/recovery`
+
+Public endpoint for users locked out of their authenticator app. Two steps:
+
+1. `POST /otp/send { email, type: "DISABLE_2FA" }` — server validates the email exists AND has `totpSecret` set, then mails an OTP.
+2. `POST /auth/2fa/recovery { email, code }` — verifies OTP, clears `totpSecret`. User can then log in with email + password (1-step).
+
+**Threat model:** recovery is single-factor (email). If the email account is compromised, the attacker can disable 2FA. Mitigation today: short OTP TTL and single-use deletion. Stronger mitigation (future): require password before clearing, or generate one-time recovery codes at enrollment.
 
 ---
 
 ## Related code
 
-- Service: [`src/routes/auth/auth.service.ts`](../../../src/routes/auth/auth.service.ts) (`setupTwoFactorAuth`, `confirmTwoFactorSetup`, `login`, `verifyTwoFactorLogin`)
+- Service: [`src/routes/auth/auth.service.ts`](../../../src/routes/auth/auth.service.ts) (`setupTwoFactorAuth`, `confirmTwoFactorSetup`, `login`, `verifyTwoFactorLogin`, `disableTwoFactorAuth`, `recoveryDisable2FA`)
 - Controller: [`src/routes/auth/auth.controller.ts`](../../../src/routes/auth/auth.controller.ts)
 - TOTP wrapper: [`src/shared/services/2fa.service.ts`](../../../src/shared/services/2fa.service.ts) (using [`otpauth`](https://github.com/hectorm/otpauth))
 - Token signing: [`src/shared/services/token.service.ts`](../../../src/shared/services/token.service.ts)

@@ -29,6 +29,19 @@ Skip step 3 → DB unchanged → login stays 1-step (no lockout).
 1. POST /auth/login                  → { requires2FA: false, accessToken, refreshToken, user }
 ```
 
+## Flow D — Recover an account locked out of 2FA (lost authenticator)
+
+For users who have 2FA enabled but lost access to their authenticator app.
+Requires email access only (no auth token).
+
+```text
+1. POST /otp/send { email, type: "DISABLE_2FA" }   → email sent (server validates user has 2FA)
+   (read 6-digit code from email)
+2. POST /auth/2fa/recovery { email, code }         → { message: "Auth.TwoFactorDisabled" }
+   (user.totpSecret = NULL)
+3. POST /auth/login { email, password }            → 1-step login (no 2FA)
+```
+
 ## Request / response bodies
 
 ### POST /auth/login
@@ -78,6 +91,18 @@ Header: `Authorization: Bearer <accessToken>`
 { "accessToken": "...", "refreshToken": "...", "user": { ... } }
 ```
 
+### POST /auth/2fa/recovery
+
+Public. Used when the authenticator app is lost; falls back to email OTP.
+
+```json
+// req
+{ "email": "...", "code": "<6 digits from email>" }
+
+// res
+{ "message": "Auth.TwoFactorDisabled" }
+```
+
 ## Reset to retest
 
 ```sql
@@ -88,13 +113,14 @@ Also delete the old entry in the authenticator app before re-running Flow A.
 
 ## Error responses
 
-| Status | Code                       | Endpoint                                | Cause                                                       |
-| ------ | -------------------------- | --------------------------------------- | ----------------------------------------------------------- |
-| 422    | `Error.InvalidCredentials` | `/auth/login`                           | Wrong email or password                                     |
-| 422    | `Error.TOTPAlreadyEnabled` | `/auth/2fa/setup`, `/auth/2fa/confirm`  | `user.totpSecret` already set                               |
-| 401    | `Error.InvalidSetupToken`  | `/auth/2fa/confirm`                     | Token bad / expired (10 min) / wrong type / userId mismatch |
-| 422    | `Error.InvalidTOTP`        | `/auth/2fa/confirm`, `/auth/2fa/verify` | TOTP code doesn't validate                                  |
-| 401    | `Error.InvalidTempToken`   | `/auth/2fa/verify`                      | Token bad / expired (5 min) / wrong type / user gone        |
+| Status | Code                       | Endpoint                                        | Cause                                                       |
+| ------ | -------------------------- | ----------------------------------------------- | ----------------------------------------------------------- |
+| 422    | `Error.InvalidCredentials` | `/auth/login`                                   | Wrong email or password                                     |
+| 422    | `Error.TOTPAlreadyEnabled` | `/auth/2fa/setup`, `/auth/2fa/confirm`          | `user.totpSecret` already set                               |
+| 401    | `Error.InvalidSetupToken`  | `/auth/2fa/confirm`                             | Token bad / expired (10 min) / wrong type / userId mismatch |
+| 422    | `Error.InvalidTOTP`        | `/auth/2fa/confirm`, `/auth/2fa/verify`         | TOTP code doesn't validate                                  |
+| 401    | `Error.InvalidTempToken`   | `/auth/2fa/verify`                              | Token bad / expired (5 min) / wrong type / user gone        |
+| 422    | `Error.TOTPNotEnabled`     | `/auth/2fa/recovery`, `/otp/send` (DISABLE_2FA) | User does not exist or has no `totpSecret` set              |
 
 ## Common gotcha
 

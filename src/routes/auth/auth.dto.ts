@@ -7,6 +7,7 @@ import {
   LoginBodySchema,
   LoginResSchema,
   LogoutBodySchema,
+  RecoveryDisable2FABodySchema,
   RefreshTokenBodySchema,
   RefreshTokenResSchema,
   RegisterBodySchema,
@@ -38,3 +39,5 @@ export class Verify2FABodyDTO extends createZodDto(Verify2FABodySchema) {}
 export class Verify2FAResDTO extends createZodDto(Verify2FAResSchema) {}
 
 export class ConfirmTwoFactorBodyDTO extends createZodDto(ConfirmTwoFactorBodySchema) {}
+
+export class RecoveryDisable2FABodyDTO extends createZodDto(RecoveryDisable2FABodySchema) {}

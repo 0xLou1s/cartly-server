@@ -53,6 +53,13 @@ export const Verify2FABodySchema = z
 
 export const Verify2FAResSchema = AuthResSchema
 
+export const RecoveryDisable2FABodySchema = z
+  .object({
+    email: z.email(),
+    code: z.string().length(6),
+  })
+  .strict()
+
 export const RefreshTokenBodySchema = z
   .object({
     refreshToken: z.string(),
@@ -174,3 +181,4 @@ export type TwoFactorSetupResType = z.infer<typeof TwoFactorSetupResSchema>
 export type Verify2FABodyType = z.infer<typeof Verify2FABodySchema>
 export type Verify2FAResType = z.infer<typeof Verify2FAResSchema>
 export type ConfirmTwoFactorBodyType = z.infer<typeof ConfirmTwoFactorBodySchema>
+export type RecoveryDisable2FABodyType = z.infer<typeof RecoveryDisable2FABodySchema>

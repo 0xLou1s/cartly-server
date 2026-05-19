@@ -17,6 +17,7 @@ import {
   DisableTwoFactorBodyType,
   ForgotPasswordBodyType,
   LoginBodyType,
+  RecoveryDisable2FABodyType,
   RefreshTokenBodyType,
   RegisterBodyType,
   Verify2FABodyType,
@@ -329,6 +330,23 @@ export class AuthService {
     }
 
     await this.authRepository.updateUser({ id: userId }, { totpSecret: null })
+    return { message: AuthMessage.Success.TwoFactorDisabled }
+  }
+
+  async recoveryDisable2FA(body: RecoveryDisable2FABodyType) {
+    const user = await this.sharedUserRepository.findUnique({ email: body.email })
+    if (!user || !user.totpSecret) {
+      throw TOTPNotEnabledException
+    }
+    const verificationCode = await this.otpService.verifyOTP({
+      email: body.email,
+      code: body.code,
+      type: TypeOfVerificationCode.DISABLE_2FA,
+    })
+    await Promise.all([
+      this.authRepository.updateUser({ id: user.id }, { totpSecret: null }),
+      this.otpService.deleteVerificationCode(verificationCode),
+    ])
     return { message: AuthMessage.Success.TwoFactorDisabled }
   }
 }

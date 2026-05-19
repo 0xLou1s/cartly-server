@@ -9,6 +9,7 @@ import {
   LoginBodyDTO,
   LoginResDTO,
   LogoutBodyDTO,
+  RecoveryDisable2FABodyDTO,
   RefreshTokenBodyDTO,
   RefreshTokenResDTO,
   RegisterBodyDTO,
@@ -143,5 +144,13 @@ export class AuthController {
       ...body,
       userId,
     })
+  }
+
+  @Post('2fa/recovery')
+  @IsPublic()
+  @HttpCode(HttpStatus.OK)
+  @ZodSerializerDto(MessageResDTO)
+  recoveryDisable2FA(@Body() body: RecoveryDisable2FABodyDTO) {
+    return this.authService.recoveryDisable2FA(body)
   }
 }
