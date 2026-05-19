@@ -7,6 +7,7 @@ import {
   FailedToSendOTPException,
   InvalidOTPException,
   OTPExpiredException,
+  TOTPNotEnabledException,
 } from 'src/routes/auth/error.model'
 import { SendOTPBodyType } from 'src/routes/otp/otp.model'
 import { OtpRepository } from 'src/routes/otp/otp.repo'
@@ -36,6 +37,12 @@ export class OtpService {
     }
     if (body.type === TypeOfVerificationCode.FORGOT_PASSWORD && !user) {
       throw EmailNotFoundException
+    }
+    if (body.type === TypeOfVerificationCode.LOGIN && !user) {
+      throw EmailNotFoundException
+    }
+    if (body.type === TypeOfVerificationCode.DISABLE_2FA && (!user || !user.totpSecret)) {
+      throw TOTPNotEnabledException
     }
     const code = generateOTP()
     await this.otpRepository.createVerificationCode({

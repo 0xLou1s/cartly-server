@@ -23,5 +23,6 @@ export const AuthMessage = {
     LogoutSuccessful: 'Auth.LogoutSuccessful',
     ResetPasswordSuccessful: 'Auth.ResetPasswordSuccessful',
     TwoFactorEnabled: 'Auth.TwoFactorEnabled',
+    TwoFactorDisabled: 'Auth.TwoFactorDisabled',
   },
 } as const

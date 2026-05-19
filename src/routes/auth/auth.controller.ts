@@ -3,6 +3,7 @@ import type { Response } from 'express'
 import { ZodSerializerDto } from 'nestjs-zod'
 import {
   ConfirmTwoFactorBodyDTO,
+  DisableTwoFactorBodyDTO,
   ForgotPasswordBodyDTO,
   GetAuthorizationUrlResDTO,
   LoginBodyDTO,
@@ -132,5 +133,15 @@ export class AuthController {
   @ZodSerializerDto(MessageResDTO)
   confirmTwoFactorSetup(@Body() body: ConfirmTwoFactorBodyDTO, @ActiveUser('userId') userId: number) {
     return this.authService.confirmTwoFactorSetup(userId, body)
+  }
+
+  @Post('2fa/disable')
+  @HttpCode(HttpStatus.OK)
+  @ZodSerializerDto(MessageResDTO)
+  disableTwoFactorAuth(@Body() body: DisableTwoFactorBodyDTO, @ActiveUser('userId') userId: number) {
+    return this.authService.disableTwoFactorAuth({
+      ...body,
+      userId,
+    })
   }
 }

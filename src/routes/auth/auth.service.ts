@@ -14,6 +14,7 @@ import { TokenService } from 'src/shared/services/token.service'
 import { AccessTokenPayloadCreate } from 'src/shared/types/jwt.type'
 import {
   ConfirmTwoFactorBodyType,
+  DisableTwoFactorBodyType,
   ForgotPasswordBodyType,
   LoginBodyType,
   RefreshTokenBodyType,
@@ -30,6 +31,7 @@ import {
   InvalidTOTPException,
   RefreshTokenAlreadyUsedException,
   TOTPAlreadyEnabledException,
+  TOTPNotEnabledException,
   UnauthorizedAccessException,
 } from './error.model'
 
@@ -259,7 +261,7 @@ export class AuthService {
   async setupTwoFactorAuth(userId: number) {
     const user = await this.sharedUserRepository.findUnique({ id: userId })
     if (!user) {
-      throw EmailNotFoundException
+      throw UnauthorizedAccessException
     }
     if (user.totpSecret) {
       throw TOTPAlreadyEnabledException
@@ -281,7 +283,7 @@ export class AuthService {
     }
     const user = await this.sharedUserRepository.findUnique({ id: userId })
     if (!user) {
-      throw EmailNotFoundException
+      throw UnauthorizedAccessException
     }
     if (user.totpSecret) {
       throw TOTPAlreadyEnabledException
@@ -296,5 +298,37 @@ export class AuthService {
     }
     await this.authRepository.updateUser({ id: userId }, { totpSecret: payload.secret })
     return { message: AuthMessage.Success.TwoFactorEnabled }
+  }
+
+  async disableTwoFactorAuth(data: DisableTwoFactorBodyType & { userId: number }) {
+    const { userId, totpCode, code } = data
+    const user = await this.sharedUserRepository.findUnique({ id: userId })
+    if (!user) {
+      throw UnauthorizedAccessException
+    }
+    if (!user.totpSecret) {
+      throw TOTPNotEnabledException
+    }
+
+    if (totpCode) {
+      const isValid = this.twoFactorService.verifyTOTP({
+        email: user.email,
+        secret: user.totpSecret,
+        token: totpCode,
+      })
+      if (!isValid) {
+        throw InvalidTOTPException
+      }
+    } else if (code) {
+      const verificationCode = await this.otpService.verifyOTP({
+        email: user.email,
+        code,
+        type: TypeOfVerificationCode.DISABLE_2FA,
+      })
+      await this.otpService.deleteVerificationCode(verificationCode)
+    }
+
+    await this.authRepository.updateUser({ id: userId }, { totpSecret: null })
+    return { message: AuthMessage.Success.TwoFactorDisabled }
   }
 }
