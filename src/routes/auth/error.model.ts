@@ -63,3 +63,39 @@ export const GoogleUserInfoError = new Error(AuthMessage.Error.FailedToGetGoogle
 export const MissingStateError = new Error(AuthMessage.Error.MissingState)
 export const InvalidStateError = new Error(AuthMessage.Error.InvalidState)
 export const StateExpiredError = new Error(AuthMessage.Error.StateExpired)
+
+// 2FA related errors
+export const InvalidTOTPException = new UnprocessableEntityException([
+  {
+    message: AuthMessage.Error.InvalidTOTP,
+    path: 'totpCode',
+  },
+])
+
+export const InvalidTempTokenException = new UnauthorizedException(AuthMessage.Error.InvalidTempToken)
+export const InvalidSetupTokenException = new UnauthorizedException(AuthMessage.Error.InvalidSetupToken)
+
+export const TOTPAlreadyEnabledException = new UnprocessableEntityException([
+  {
+    message: AuthMessage.Error.TOTPAlreadyEnabled,
+    path: 'totpCode',
+  },
+])
+
+export const TOTPNotEnabledException = new UnprocessableEntityException([
+  {
+    message: AuthMessage.Error.TOTPNotEnabled,
+    path: 'totpCode',
+  },
+])
+
+export const InvalidTOTPAndCodeException = new UnprocessableEntityException([
+  {
+    message: AuthMessage.Error.InvalidTOTPAndCode,
+    path: 'totpCode',
+  },
+  {
+    message: AuthMessage.Error.InvalidTOTPAndCode,
+    path: 'code',
+  },
+])

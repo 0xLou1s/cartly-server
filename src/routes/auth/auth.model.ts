@@ -30,12 +30,35 @@ export const AuthResSchema = z.object({
 })
 
 export const RegisterResSchema = AuthResSchema
-export const LoginResSchema = AuthResSchema
 
 export const LoginBodySchema = UserSchema.pick({
   email: true,
   password: true,
 }).strict()
+
+export const LoginResSchema = z.object({
+  requires2FA: z.boolean(),
+  tempToken: z.string().optional(),
+  accessToken: z.string().optional(),
+  refreshToken: z.string().optional(),
+  user: UserResSchema.optional(),
+})
+
+export const Verify2FABodySchema = z
+  .object({
+    tempToken: z.string(),
+    code: z.string().length(6),
+  })
+  .strict()
+
+export const Verify2FAResSchema = AuthResSchema
+
+export const RecoveryDisable2FABodySchema = z
+  .object({
+    email: z.email(),
+    code: z.string().length(6),
+  })
+  .strict()
 
 export const RefreshTokenBodySchema = z
   .object({
@@ -77,6 +100,34 @@ export const RoleSchema = z.object({
   createdAt: z.date(),
   updatedAt: z.date(),
 })
+
+export const DisableTwoFactorBodySchema = z
+  .object({
+    totpCode: z.string().length(6).optional(),
+    code: z.string().length(6).optional(),
+  })
+  .strict()
+  .superRefine(({ totpCode, code }, ctx) => {
+    const hasTotpCode = totpCode !== undefined
+    const hasOtpCode = code !== undefined
+    if (hasTotpCode === hasOtpCode) {
+      const issue = { code: 'custom' as const, message: AuthMessage.Error.TOTPOrOTPCodeRequired }
+      ctx.addIssue({ ...issue, path: ['totpCode'] })
+      ctx.addIssue({ ...issue, path: ['code'] })
+    }
+  })
+export const TwoFactorSetupResSchema = z.object({
+  secret: z.string(),
+  uri: z.string(),
+  setupToken: z.string(),
+})
+
+export const ConfirmTwoFactorBodySchema = z
+  .object({
+    setupToken: z.string(),
+    code: z.string().length(6),
+  })
+  .strict()
 
 export const LogoutBodySchema = RefreshTokenBodySchema
 
@@ -125,3 +176,9 @@ export type GoogleAuthStateType = z.infer<typeof GoogleAuthStateSchema>
 export type GoogleAuthSignedStateType = z.infer<typeof GoogleAuthSignedStateSchema>
 export type GetAuthorizationUrlResType = z.infer<typeof GetAuthorizationUrlResSchema>
 export type ForgotPasswordBodyType = z.infer<typeof ForgotPasswordBodySchema>
+export type DisableTwoFactorBodyType = z.infer<typeof DisableTwoFactorBodySchema>
+export type TwoFactorSetupResType = z.infer<typeof TwoFactorSetupResSchema>
+export type Verify2FABodyType = z.infer<typeof Verify2FABodySchema>
+export type Verify2FAResType = z.infer<typeof Verify2FAResSchema>
+export type ConfirmTwoFactorBodyType = z.infer<typeof ConfirmTwoFactorBodySchema>
+export type RecoveryDisable2FABodyType = z.infer<typeof RecoveryDisable2FABodySchema>

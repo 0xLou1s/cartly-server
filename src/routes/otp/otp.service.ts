@@ -7,6 +7,7 @@ import {
   FailedToSendOTPException,
   InvalidOTPException,
   OTPExpiredException,
+  TOTPNotEnabledException,
 } from 'src/routes/auth/error.model'
 import { SendOTPBodyType } from 'src/routes/otp/otp.model'
 import { OtpRepository } from 'src/routes/otp/otp.repo'
@@ -16,6 +17,8 @@ import envConfig from 'src/shared/env.config'
 import { generateOTP } from 'src/shared/helpers'
 import { SharedUserRepository } from 'src/shared/repositories/shared-user.repo'
 import { EmailService } from 'src/shared/services/email.service'
+
+type VerificationCodeKey = { email: string; code: string; type: TypeOfVerificationCodeType }
 
 @Injectable()
 export class OtpService {
@@ -34,6 +37,12 @@ export class OtpService {
     }
     if (body.type === TypeOfVerificationCode.FORGOT_PASSWORD && !user) {
       throw EmailNotFoundException
+    }
+    if (body.type === TypeOfVerificationCode.LOGIN && !user) {
+      throw EmailNotFoundException
+    }
+    if (body.type === TypeOfVerificationCode.DISABLE_2FA && (!user || !user.totpSecret)) {
+      throw TOTPNotEnabledException
     }
     const code = generateOTP()
     await this.otpRepository.createVerificationCode({
@@ -54,9 +63,11 @@ export class OtpService {
     return { message: OtpMessage.Success.Sent }
   }
 
-  async verifyOTP(payload: { email: string; code: string; type: TypeOfVerificationCodeType }) {
-    const verificationCode = await this.otpRepository.findUniqueVerificationCode(payload)
-    if (!verificationCode) {
+  async verifyOTP({ email, code, type }: VerificationCodeKey) {
+    const verificationCode = await this.otpRepository.findUniqueVerificationCode({
+      email_type: { email, type },
+    })
+    if (!verificationCode || verificationCode.code !== code) {
       throw InvalidOTPException
     }
     if (verificationCode.expiresAt < new Date()) {
@@ -65,7 +76,9 @@ export class OtpService {
     return verificationCode
   }
 
-  deleteVerificationCode(uniqueValue: { id: number } | { email: string }) {
-    return this.otpRepository.deleteVerificationCode(uniqueValue)
+  deleteVerificationCode({ email, type }: { email: string; type: TypeOfVerificationCodeType }) {
+    return this.otpRepository.deleteVerificationCode({
+      email_type: { email, type },
+    })
   }
 }

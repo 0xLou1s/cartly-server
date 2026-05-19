@@ -3,6 +3,10 @@ import { VerificationCodeType } from 'src/routes/otp/otp.model'
 import { TypeOfVerificationCodeType } from 'src/shared/constants/auth.constant'
 import { PrismaService } from 'src/shared/services/prisma.service'
 
+export type VerificationCodeUniqueInput =
+  | { id: number }
+  | { email_type: { email: string; type: TypeOfVerificationCodeType } }
+
 @Injectable()
 export class OtpRepository {
   constructor(private readonly prismaService: PrismaService) {}
@@ -12,7 +16,10 @@ export class OtpRepository {
   ): Promise<VerificationCodeType> {
     return this.prismaService.verificationCode.upsert({
       where: {
-        email: payload.email,
+        email_type: {
+          email: payload.email,
+          type: payload.type,
+        },
       },
       create: payload,
       update: {
@@ -22,22 +29,13 @@ export class OtpRepository {
     })
   }
 
-  async findUniqueVerificationCode(
-    uniqueValue:
-      | { email: string }
-      | { id: number }
-      | {
-          email: string
-          code: string
-          type: TypeOfVerificationCodeType
-        },
-  ): Promise<VerificationCodeType | null> {
+  async findUniqueVerificationCode(uniqueValue: VerificationCodeUniqueInput): Promise<VerificationCodeType | null> {
     return this.prismaService.verificationCode.findUnique({
       where: uniqueValue,
     })
   }
 
-  deleteVerificationCode(uniqueValue: { id: number } | { email: string }) {
+  deleteVerificationCode(uniqueValue: VerificationCodeUniqueInput): Promise<VerificationCodeType> {
     return this.prismaService.verificationCode.delete({
       where: uniqueValue,
     })
