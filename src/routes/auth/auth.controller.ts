@@ -11,11 +11,14 @@ import {
   RefreshTokenResDTO,
   RegisterBodyDTO,
   RegisterResDTO,
+  TwoFactorSetupResDTO,
 } from 'src/routes/auth/auth.dto'
 import { AuthService } from 'src/routes/auth/auth.service'
+import { ActiveUser } from 'src/shared/decorators/active-user.decorator'
 import { IsPublic } from 'src/shared/decorators/auth.decorator'
 import { UserAgent } from 'src/shared/decorators/user-agent.decorator'
 import { MessageResDTO } from 'src/shared/dtos/reponse.dto'
+import { EmptyBodyDTO } from 'src/shared/dtos/request.dto'
 import envConfig from 'src/shared/env.config'
 import { GoogleService } from './google.service'
 
@@ -99,5 +102,13 @@ export class AuthController {
   @ZodSerializerDto(MessageResDTO)
   forgotPassword(@Body() body: ForgotPasswordBodyDTO) {
     return this.authService.forgotPassword(body)
+  }
+
+  // POST with empty body: the action has a side-effect (issuing a TOTP secret), matching REST semantics.
+  // Avoid GET so the URL doesn't leak into browser history, access logs, or referrer headers.
+  @Post('2fa/setup')
+  @ZodSerializerDto(TwoFactorSetupResDTO)
+  setupTwoFactorAuth(@Body() _: EmptyBodyDTO, @ActiveUser('userId') userId: number) {
+    return this.authService.setupTwoFactorAuth(userId)
   }
 }
