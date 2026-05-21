@@ -9,9 +9,10 @@ import { SharedModule } from 'src/shared/shared.module'
 import { AppController } from './app.controller'
 import { AppService } from './app.service'
 import { LanguageModule } from './routes/language/language.module'
+import { PermissionModule } from './routes/permission/permission.module'
 
 @Module({
-  imports: [SharedModule, AuthModule, OtpModule, LanguageModule],
+  imports: [SharedModule, AuthModule, OtpModule, LanguageModule, PermissionModule],
   controllers: [AppController],
   providers: [
     AppService,
