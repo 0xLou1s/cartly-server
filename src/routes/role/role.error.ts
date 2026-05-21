@@ -7,3 +7,12 @@ export const RoleAlreadyExistsException = new UnprocessableEntityException([
     path: 'name',
   },
 ])
+
+export const RoleHasDeletedPermissionException = (deletedIds: string) =>
+  new UnprocessableEntityException([
+    {
+      message: RoleMessage.Error.PermissionDeleted,
+      path: 'permissionIds',
+      deletedIds,
+    },
+  ])
