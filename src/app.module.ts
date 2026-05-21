@@ -8,9 +8,10 @@ import CustomZodValidationPipe from 'src/shared/pipes/custom-zod-validation.pipe
 import { SharedModule } from 'src/shared/shared.module'
 import { AppController } from './app.controller'
 import { AppService } from './app.service'
+import { LanguageModule } from './routes/language/language.module'
 
 @Module({
-  imports: [SharedModule, AuthModule, OtpModule],
+  imports: [SharedModule, AuthModule, OtpModule, LanguageModule],
   controllers: [AppController],
   providers: [
     AppService,
