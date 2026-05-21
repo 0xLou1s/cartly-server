@@ -12,9 +12,10 @@ export class RolesService {
     if (this.clientRoleId) {
       return this.clientRoleId
     }
-    const role = await this.prismaService.role.findUniqueOrThrow({
+    const role = await this.prismaService.role.findFirstOrThrow({
       where: {
         name: RoleName.CLIENT,
+        deletedAt: null,
       },
     })
     this.clientRoleId = role.id
