@@ -17,6 +17,8 @@ export const PermissionSchema = z.object({
   ]),
   createdById: z.number().nullable(),
   updatedById: z.number().nullable(),
+  deletedById: z.date().nullable(),
+  deletedAt: z.date().nullable(),
   createdAt: z.date(),
   updatedAt: z.date(),
 })
