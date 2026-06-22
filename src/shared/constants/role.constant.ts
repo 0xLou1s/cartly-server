@@ -4,6 +4,9 @@ export const RoleName = {
   SELLER: 'SELLER',
 }
 
+// Built-in roles that users are not allowed to mutate (update/delete).
+export const BaseRoleNames: string[] = [RoleName.ADMIN, RoleName.CLIENT, RoleName.SELLER]
+
 export const HTTPMethod = {
   GET: 'GET',
   POST: 'POST',

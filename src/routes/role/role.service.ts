@@ -1,8 +1,9 @@
 import { Injectable } from '@nestjs/common'
-import { RoleAlreadyExistsException } from 'src/routes/role/role.error'
+import { ProhibitedActionOnBaseRoleException, RoleAlreadyExistsException } from 'src/routes/role/role.error'
 import { CreateRoleBodyType, GetRolesQueryType, UpdateRoleBodyType } from 'src/routes/role/role.model'
 import { RoleRepo } from 'src/routes/role/role.repo'
 import { RoleMessage } from 'src/shared/constants/messages/role.message'
+import { BaseRoleNames, RoleName } from 'src/shared/constants/role.constant'
 import { NotFoundRecordException } from 'src/shared/error'
 import { isNotFoundPrismaError, isUniqueConstraintPrismaError } from 'src/shared/helpers'
 
@@ -15,6 +16,10 @@ export class RoleService {
   }
 
   async findById(id: number) {
+    return this.getRoleOrThrow(id)
+  }
+
+  private async getRoleOrThrow(id: number) {
     const role = await this.roleRepo.findById(id)
     if (!role) {
       throw NotFoundRecordException
@@ -38,6 +43,10 @@ export class RoleService {
 
   async update({ id, data, updatedById }: { id: number; data: UpdateRoleBodyType; updatedById: number }) {
     try {
+      const role = await this.getRoleOrThrow(id)
+      if (role.name === RoleName.ADMIN) {
+        throw ProhibitedActionOnBaseRoleException
+      }
       return await this.roleRepo.update({
         id,
         updatedById,
@@ -56,6 +65,10 @@ export class RoleService {
 
   async delete({ id, deletedById }: { id: number; deletedById: number }) {
     try {
+      const role = await this.getRoleOrThrow(id)
+      if (BaseRoleNames.includes(role.name)) {
+        throw ProhibitedActionOnBaseRoleException
+      }
       // Soft delete by default — keeps history. Pass `true` from a maintenance path for a hard delete.
       await this.roleRepo.delete({ id, deletedById })
       return {
