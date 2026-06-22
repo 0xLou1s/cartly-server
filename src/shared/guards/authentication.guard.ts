@@ -45,7 +45,8 @@ export class AuthenticationGuard implements CanActivate {
           return false
         })
         if (!canActivate) {
-          throw new UnauthorizedException()
+          // Rethrow the real error (e.g. 403 from the permission check) instead of masking it as 401.
+          throw error
         }
       }
       return true
