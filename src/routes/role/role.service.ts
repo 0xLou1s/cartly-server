@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common'
 import { ProhibitedActionOnBaseRoleException, RoleAlreadyExistsException } from 'src/routes/role/role.error'
-import { CreateRoleBodyType, GetRolesQueryType, UpdateRoleBodyType } from 'src/routes/role/role.model'
+import { CreateRoleBodyType, GetRolesQueryType, RoleType, UpdateRoleBodyType } from 'src/routes/role/role.model'
 import { RoleRepo } from 'src/routes/role/role.repo'
 import { RoleMessage } from 'src/shared/constants/messages/role.message'
-import { BaseRoleNames, RoleName } from 'src/shared/constants/role.constant'
+import { BaseRoleNames } from 'src/shared/constants/role.constant'
 import { NotFoundRecordException } from 'src/shared/error'
 import { isNotFoundPrismaError, isUniqueConstraintPrismaError } from 'src/shared/helpers'
 
@@ -27,6 +27,13 @@ export class RoleService {
     return role
   }
 
+  // Base roles (ADMIN/CLIENT/SELLER) are built-in and must not be mutated by users.
+  private assertNotBaseRole(role: RoleType) {
+    if (BaseRoleNames.includes(role.name)) {
+      throw ProhibitedActionOnBaseRoleException
+    }
+  }
+
   async create({ data, createdById }: { data: CreateRoleBodyType; createdById: number }) {
     try {
       return await this.roleRepo.create({
@@ -44,9 +51,7 @@ export class RoleService {
   async update({ id, data, updatedById }: { id: number; data: UpdateRoleBodyType; updatedById: number }) {
     try {
       const role = await this.getRoleOrThrow(id)
-      if (role.name === RoleName.ADMIN) {
-        throw ProhibitedActionOnBaseRoleException
-      }
+      this.assertNotBaseRole(role)
       return await this.roleRepo.update({
         id,
         updatedById,
@@ -66,9 +71,7 @@ export class RoleService {
   async delete({ id, deletedById }: { id: number; deletedById: number }) {
     try {
       const role = await this.getRoleOrThrow(id)
-      if (BaseRoleNames.includes(role.name)) {
-        throw ProhibitedActionOnBaseRoleException
-      }
+      this.assertNotBaseRole(role)
       // Soft delete by default — keeps history. Pass `true` from a maintenance path for a hard delete.
       await this.roleRepo.delete({ id, deletedById })
       return {
