@@ -1,0 +1,20 @@
+import { ForbiddenException, UnprocessableEntityException } from '@nestjs/common'
+import { RoleMessage } from 'src/shared/constants/messages/role.message'
+
+export const RoleAlreadyExistsException = new UnprocessableEntityException([
+  {
+    message: RoleMessage.Error.RoleAlreadyExists,
+    path: 'name',
+  },
+])
+
+export const RoleHasDeletedPermissionException = (deletedIds: string) =>
+  new UnprocessableEntityException([
+    {
+      message: RoleMessage.Error.PermissionDeleted,
+      path: 'permissionIds',
+      deletedIds,
+    },
+  ])
+
+export const ProhibitedActionOnBaseRoleException = new ForbiddenException(RoleMessage.Error.ProhibitedActionOnBaseRole)
