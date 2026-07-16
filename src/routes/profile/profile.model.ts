@@ -1,3 +1,4 @@
+import { AuthMessage } from 'src/shared/constants/messages/auth.message'
 import { UserSchema } from 'src/shared/models/shared-user.model'
 import { z } from 'zod'
 
@@ -19,7 +20,7 @@ export const ChangePasswordBodySchema = UserSchema.pick({
     if (newPassword !== confirmNewPassword) {
       ctx.addIssue({
         code: 'custom',
-        message: 'Error.ConfirmPasswordNotMatch',
+        message: AuthMessage.Error.ConfirmPasswordMismatch,
         path: ['confirmNewPassword'],
       })
     }
